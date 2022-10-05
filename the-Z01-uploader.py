@@ -1,12 +1,13 @@
-""" Install the package. Run Command: """
-""" py -m pip install openpyxl """
-""" py -m pip install lxml """
-""" py -m pip install pywin32  """
+""" py -m pip install openpyxl lxml pywin32"""
 
-""" env variables """
+""" imports """
+
 from extendedopenpyxl import load_workbook, save_workbook
 import datetime
 import os
+
+""" env variables """
+
 path = "C:/Auto"
 sheetName = "2&3 - Signature Sheet"
 basisOnly = "BASIS_ONLY"
@@ -15,10 +16,7 @@ list_basis_only = []
 list_not_basis_only = []
 list_po_not_found = []
 
-""" imports """
-
 """ set timestamp """
-
 
 def setTimer():
     global now
@@ -29,7 +27,6 @@ def setTimer():
 
 
 """ setup """
-
 
 def setup():
     import warnings
@@ -49,7 +46,6 @@ def setup():
 
 
 """ loop trough files in folder """
-
 
 def runner():
     global list_basis_only
@@ -89,7 +85,6 @@ def runner():
 
 
 """ edit files """
-
 
 def editFilesSOAOP():
     global nabm
@@ -142,7 +137,6 @@ def editFilesSOAOP():
 
 """ move file if PO not found """
 
-
 def moveFile():
     import shutil
     wb_obj.close()
@@ -155,7 +149,6 @@ def moveFile():
 
 """ close program if file is open """
 
-
 def checkFileOpen():
     if (os.path.isfile(path + "/~$" + file)):
         from win32com.client import Dispatch
@@ -165,7 +158,6 @@ def checkFileOpen():
 
 
 """ prints some relevant info """
-
 
 def analytics():
     print('----------------------------------------')
@@ -181,7 +173,6 @@ def analytics():
 
 
 """ stop timer """
-
 
 def stopTimer():
     end = datetime.datetime.now()

@@ -1,38 +1,51 @@
-""" py -m pip install pyautogui pywinauto """
+""" py -m pip install pyautogui pywinauto Pillow"""
 
+from importlib.resources import path
 import os
 import glob
 import numpy as np
 from tracemalloc import stop
-from pyautogui import moveTo, center, locateOnScreen, click, press
+import pyautogui as pa
 
-import pywinauto
+import pywinauto as pw
 from pywinauto import Application
-from pywinauto import findwindows
-import win32gui
 
 """ env """
-path = "C:/Auto/mdf-images"
+path = "C:/Auto"
+imgPath = path + "/mdf-images"
 mdfWildcard = ".*MDF.*"
-chromeWildcard = ".*Google Chrome.*"
 
 def getImages():
     global list_of_images
 
-    os.chdir(path)
-    list_of_images = glob.glob("*.png")
+    os.chdir(imgPath)
+    list_of_images = glob.glob("*.jpeg")
     list_of_images = [x for x in list_of_images if not x.startswith('~$')]
     list_of_images = np.sort(list_of_images)
 
 def clickImage(image):
-    moveTo(center(locateOnScreen(image)))
-    click()
+    print(image)
+    try:
+        box = pa.locateOnScreen(image)
+        point = pa.center(box)
+        print("Image found")
+        pa.click(point)
+    except:
+        print("Image not found")
+
+    """ wait for modal to appear """
+    pa.sleep(2)
+
 
 def getMDFWindow():
     global app
+    global popup
 
     try:
         """ get MDF window """
+        """ app = Application(backend="win32").connect(found_index=0, title_re=mdfWildcard, timeout=10)
+        popup = app.window(found_index=0, title_re=mdfWildcard) """
+
         app = Application(backend="win32").connect(found_index=0, title_re=mdfWildcard, timeout=10)
         popup = app.window(found_index=0, title_re=mdfWildcard)
 
@@ -43,24 +56,29 @@ def getMDFWindow():
         return None
 
 def insertDataToMDF():
-    """ insert data to MDF """
-    stop()
-    with open("NABM_TO_UPLOAD_.*.txt", "r") as f:
-        for line in f:
-            """ get modal from app """
-            print(line)
-            """ press Enter """
-    press("enter")
+    try:
+        for filename in glob.glob(path + "/NABM_TO_UPLOAD_*.txt"):
+            with open(filename, 'r') as f:
+                for line in f:
+                    """ get modal from app """
+                    print(line)
+                    """ press Enter """
+    except:
+        print("Error inserting data to MDF")
+        print("Missing txt file")
+
+    # pa.press("enter")
 
 def main():
-    pywinauto.timings.Timings.after_clickinput_wait = 2
+    pw.timings.Timings.after_click_wait = 2
+    pw.timings.Timings.after_clickinput_wait = 2
     getMDFWindow()
     getImages()
 
-    for (file, i) in set(list_of_images):
-        clickImage(file)
-        print(i)
-        print(app)
+    print(list_of_images)
+
+    for i, img in enumerate(list_of_images, start=1):   # Python indexes start at zero
+        clickImage(img)
 
         """ on step 4 write all nabm from txt file """
         if i == 4: insertDataToMDF()

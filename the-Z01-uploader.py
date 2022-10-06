@@ -1,4 +1,4 @@
-""" py -m pip install openpyxl lxml pywin32 numpy"""
+""" py -m pip install openpyxl lxml pywin32 numpy """
 
 """ imports """
 
@@ -100,7 +100,6 @@ def runner():
             list_of_nabm.append(nabm)
 
         else:
-            list_not_basis_only.append(file)
             editFilesSOAOP()
 
 
@@ -138,6 +137,7 @@ def editFilesSOAOP():
 
     """ only append nabm to files that are edited or basis only """
     list_of_nabm.append(nabm)
+    list_not_basis_only.append(file)
 
     for rowNr in indexes:
         """ get column N from cell """

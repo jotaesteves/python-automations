@@ -14,6 +14,7 @@ import win32gui
 """ env """
 path = "C:/Auto/mdf-images"
 mdfWildcard = ".*MDF.*"
+chromeWildcard = ".*Google Chrome.*"
 
 def getImages():
     global list_of_images
@@ -29,16 +30,13 @@ def clickImage(image):
 
 def getMDFWindow():
     global app
+
     try:
-        app = Application(backend="uia").connect(title_re=mdfWildcard).top_window()
-        app.set_focus()
+        """ get MDF window """
+        app = Application(backend="win32").connect(found_index=0, title_re=mdfWildcard, timeout=10)
+        popup = app.window(found_index=0, title_re=mdfWildcard)
 
-        win = app.window(title_re=mdfWildcard)
-        print(win)
-
-        """ hwnd = win32gui.FindWindow(None, mdfWildcard)
-        win32gui.SetForegroundWindow(hwnd)
-        win32gui.ShowWindow(hwnd, 9) """
+        popup.type_keys('{RIGHT}{ENTER}') # it calls .set_focus() inside
 
     except:
         print("MDF not found")

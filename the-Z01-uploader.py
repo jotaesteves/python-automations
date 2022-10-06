@@ -1,4 +1,4 @@
-""" py -m pip install openpyxl lxml pywin32"""
+""" py -m pip install openpyxl lxml pywin32 numpy"""
 
 """ imports """
 

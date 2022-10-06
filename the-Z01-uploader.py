@@ -2,27 +2,33 @@
 
 """ imports """
 
-from extendedopenpyxl import load_workbook, save_workbook
-import datetime
 import os
+import datetime
+import numpy as np
+from extendedopenpyxl import load_workbook, save_workbook
 
 """ env variables """
 
 path = "C:/Auto"
 sheetName = "2&3 - Signature Sheet"
 basisOnly = "BASIS_ONLY"
+bezeichnung = "Bezeichnung"
+bestellpositionen = "Dieses Abnahmeprotokoll umfasst folgende Bestellpositionen"
 summaryOfAddOnPOs = "Summary of add on POs"
 list_basis_only = []
 list_not_basis_only = []
 list_po_not_found = []
+list_of_nabm = []
+list_of_errors = []
 
 """ set timestamp """
 
 def setTimer():
     global now
+    global timestamp
     now = datetime.datetime.now()
 
-    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = now.strftime("%Y-%m-%d__%H-%M-%S")
     print(timestamp)
 
 
@@ -68,16 +74,30 @@ def runner():
         wb_obj = load_workbook(file, read_only=False,
                                keep_vba=True, keep_links=False)
         sheet_obj = wb_obj[sheetName]
-        """ read cell D23 """
-        cell_bezeichnung = sheet_obj.cell(row=23, column=4)
-        """ read cell J23 """
-        cell_nabm = sheet_obj.cell(row=23, column=10)
-        nabm = cell_nabm.value
 
-        isBasisOnly = cell_bezeichnung.value == basisOnly
+        columnA = np.array([x.value for x in sheet_obj['A']])
+        """ find index of "bestellpositionen" """
+        index = np.where(columnA == bestellpositionen)
+        startingRow = index[0][0] + 3 # +1 to get row of bestellpositionen, +2 to get row with first value
+        nabm = sheet_obj.cell(row=startingRow, column=10).value
+        """ check if nabm is empty or null or not a string """
+        if (nabm == None or nabm == "" or not isinstance(nabm, str)):
+            list_of_errors.append(file)
+            moveFile('/NOT FOUND')
+            continue
+
+        """ check if basisOnlyValue is empty or null or not a string """
+        basisOnlyValue = sheet_obj.cell(row=startingRow, column=4).value
+        if (basisOnlyValue == None or basisOnlyValue == "" or not isinstance(basisOnlyValue, str)):
+            list_of_errors.append(file)
+            moveFile('/NOT FOUND')
+            continue
+
+        isBasisOnly = basisOnlyValue == basisOnly
 
         if (isBasisOnly):
             list_basis_only.append(file)
+            list_of_nabm.append(nabm)
 
         else:
             list_not_basis_only.append(file)
@@ -97,25 +117,31 @@ def editFilesSOAOP():
         soaop_file, read_only=False, keep_vba=True, keep_links=False)
     soaop_sheet_obj = soaop_obj.active
 
-    """ read column B """
-    columnB = soaop_sheet_obj['B']
+    """ read column B and N """
+    columnB = np.array([x.value for x in soaop_sheet_obj['B']])
     columnN = soaop_sheet_obj['N']
+
     i = 0
     j = 10
-    rowsThatMatchSet = set(i for i, x in enumerate(columnB) if x.value == nabm)
+
+    indexes = np.where(columnB == nabm)
+    """ add +1 to each value of indexes """
+    indexes = [x for x in indexes[0]]
 
     """ check if set is empty """
-    isEmpty = (len(rowsThatMatchSet) == 0)
+    isEmpty = (len(indexes) == 0)
 
     if (isEmpty):
-        list_po_not_found.append(nabm)
-        moveFile()
+        list_po_not_found.append(file)
+        moveFile('/PO WAITING')
         return
 
-    for cellNr in rowsThatMatchSet:
-        """ get column N from cell """
-        tempValue = columnN[cellNr].value
+    """ only append nabm to files that are edited or basis only """
+    list_of_nabm.append(nabm)
 
+    for rowNr in indexes:
+        """ get column N from cell """
+        tempValue = columnN[rowNr].value
         """ check if cell D23 of sheet_obj is not empty """
         if (sheet_obj.cell(row=23 + i, column=4).value != None):
             """ add value to cell B23 of sheet_obj """
@@ -131,20 +157,20 @@ def editFilesSOAOP():
 
     """ save file """
     wb_obj.close()
-    soaop_obj.close()
+    """ soaop_obj.close() """
     save_workbook(wb_obj, filePath)
 
 
 """ move file if PO not found """
 
-def moveFile():
+def moveFile(folderName="/ERRORS"):
     import shutil
     wb_obj.close()
-    soaop_obj.close()
+    """ soaop_obj.close() """
     """ check if folder exists """
-    if not os.path.exists(path + "/PO WAITING"):
-        os.makedirs(path + "/PO WAITING")
-    shutil.move(filePath, path + "/PO WAITING/" + file)
+    if not os.path.exists(path + folderName):
+        os.makedirs(path + folderName)
+    shutil.move(filePath, path + folderName + "/" + file)
 
 
 """ close program if file is open """
@@ -156,6 +182,23 @@ def checkFileOpen():
         xl = Dispatch('Excel.Application')
         xl.Workbooks(file).Close(SaveChanges=True)
 
+def makeFile():
+    """ prints all list_of_nabm into NABM_TO_UPLOAD_DD_MM_YY_HH:MM:SS.txt file """
+    global list_of_nabm
+    global path
+
+    list_of_nabm = list(set(list_of_nabm))
+    list_of_nabm.sort()
+
+    """ create file """
+    file = open(path + "/NABM_TO_UPLOAD_" + timestamp + ".txt", "w+")
+
+    """ write to file """
+    for nabm in list_of_nabm:
+        file.write(nabm + "\n")
+
+    """ close file """
+    file.close()
 
 """ prints some relevant info """
 
@@ -170,6 +213,10 @@ def analytics():
         print("----------------------------------------")
         print("PO NOT FOUND: [" + str(len(list_po_not_found)
                                       ) + "]  " + str(list_po_not_found))
+    if (len(list_of_errors) > 0):
+        print("----------------------------------------")
+        print("NABM / Bezeichnung Missing: [" + str(len(list_of_errors)
+                                      ) + "]  " + str(list_of_errors))
 
 
 """ stop timer """
@@ -189,5 +236,6 @@ def stopTimer():
 setTimer()
 setup()
 runner()
+makeFile()
 stopTimer()
 analytics()

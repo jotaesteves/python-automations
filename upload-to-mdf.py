@@ -12,30 +12,17 @@ from pywinauto import Application
 
 """ env """
 path = "C:/Auto"
-imgPath = path + "/mdf-images"
 mdfWildcard = ".*MDF.*"
+list_of_coordinates = [[224,24], [285,70], [20,740], [395,222], [455,705], [465,375], [503,234], [598,411]]
 
-def getImages():
-    global list_of_images
-
-    os.chdir(imgPath)
-    list_of_images = glob.glob("*.jpeg")
-    list_of_images = [x for x in list_of_images if not x.startswith('~$')]
-    list_of_images = np.sort(list_of_images)
-
-def clickImage(image):
-    print(image)
+def clickCoord(x, y):
     try:
-        box = pa.locateOnScreen(image)
-        point = pa.center(box)
-        print("Image found")
-        pa.click(point)
+        pa.moveTo(x, y)
+        pa.click()
     except:
-        print("Image not found")
+        print("Error clicking coordinates")
 
-    """ wait for modal to appear """
     pa.sleep(2)
-
 
 def getMDFWindow():
     global app
@@ -43,9 +30,6 @@ def getMDFWindow():
 
     try:
         """ get MDF window """
-        """ app = Application(backend="win32").connect(found_index=0, title_re=mdfWildcard, timeout=10)
-        popup = app.window(found_index=0, title_re=mdfWildcard) """
-
         app = Application(backend="win32").connect(found_index=0, title_re=mdfWildcard, timeout=10)
         popup = app.window(found_index=0, title_re=mdfWildcard)
 
@@ -73,19 +57,10 @@ def main():
     pw.timings.Timings.after_click_wait = 2
     pw.timings.Timings.after_clickinput_wait = 2
     getMDFWindow()
-    getImages()
 
-    print(list_of_images)
-
-    for i, img in enumerate(list_of_images, start=1):   # Python indexes start at zero
-        clickImage(img)
-
-        """ on step 4 write all nabm from txt file """
+    for i, coord in enumerate(list_of_coordinates, start=1):
+        clickCoord(coord[0], coord[1])
         if i == 4: insertDataToMDF()
-
-        """ img 5 click each nabm row, fill in the data, press Enter """
-        """ click arrow up upload btn """
-        """ click green upload button """
-        """ select favorites > auto folder """
+        # if i == 8: pa.press("enter")
 
 main()

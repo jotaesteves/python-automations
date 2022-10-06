@@ -7,11 +7,13 @@ from tracemalloc import stop
 from pyautogui import moveTo, center, locateOnScreen, click, press
 
 import pywinauto
-from pywinauto.application import Application
-
+from pywinauto import Application
+from pywinauto import findwindows
+import win32gui
 
 """ env """
 path = "C:/Auto/mdf-images"
+mdfWildcard = ".*MDF.*"
 
 def getImages():
     global list_of_images
@@ -28,8 +30,16 @@ def clickImage(image):
 def getMDFWindow():
     global app
     try:
-        app = Application(backend="uia").connect(title_re=".*MDF.*")
-        return app.window(title_re=".*MDF.*").set_focus()
+        app = Application(backend="uia").connect(title_re=mdfWildcard).top_window()
+        app.set_focus()
+
+        win = app.window(title_re=mdfWildcard)
+        print(win)
+
+        """ hwnd = win32gui.FindWindow(None, mdfWildcard)
+        win32gui.SetForegroundWindow(hwnd)
+        win32gui.ShowWindow(hwnd, 9) """
+
     except:
         print("MDF not found")
         return None
@@ -37,7 +47,7 @@ def getMDFWindow():
 def insertDataToMDF():
     """ insert data to MDF """
     stop()
-    with open("NABM_TO_UPLOAD_*.txt", "r") as f:
+    with open("NABM_TO_UPLOAD_.*.txt", "r") as f:
         for line in f:
             """ get modal from app """
             print(line)
